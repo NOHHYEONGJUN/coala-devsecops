@@ -55,19 +55,22 @@ pipeline {
         // SonarQube Quality Gate 확인
         stage('Quality Gate') {
             steps {
-                timeout(time: 5, unit: 'MINUTES') {
-                    script {
-                        try {
-                            def qg = waitForQualityGate(abortPipeline: false)
-                            if (qg.status != 'OK') {
-                                echo "Quality Gate 체크 결과: ${qg.status}"
-                            } else {
-                                echo "Quality Gate 통과!"
+                container('sonar-scanner') {
+                    withSonarQubeEnv('sonarqube') {
+                        timeout(time: 5, unit: 'MINUTES') {
+                            script {
+                                try {
+                                    def qg = waitForQualityGate(abortPipeline: false)
+                                    if (qg.status != 'OK') {
+                                        echo "Quality Gate 체크 결과: ${qg.status}"
+                                    } else {
+                                        echo "Quality Gate 통과!"
+                                    }
+                                } catch (Exception e) {
+                                    echo "Quality Gate 확인 중 오류 발생: ${e.message}"
+                                    echo "SonarQube 웹에서 품질 게이트 결과를 확인하세요. 파이프라인은 계속 진행합니다."
+                                }
                             }
-                        } catch (Exception e) {
-                            echo "Quality Gate 확인 중 오류 발생: ${e.message}"
-                            echo "SonarQube 웹에서 품질 게이트 결과를 확인하세요. 파이프라인은 계속 진행합니다."
-                            // 예외를 무시하고 파이프라인 계속 진행
                         }
                     }
                 }
