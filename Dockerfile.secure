@@ -9,8 +9,8 @@ WORKDIR /app
 # package.json과 package-lock.json만 먼저 복사하여 의존성 캐싱 활용
 COPY package*.json ./
 
-# 프로덕션 의존성만 설치 (개발 의존성 제외)
-RUN npm ci --only=production
+# 의존성 설치
+RUN npm install
 
 # 소스 코드 복사 (불필요한 파일 제외)
 COPY public ./public
