@@ -32,26 +32,21 @@ pipeline {
         }
 
         // SonarQube를 사용하여 코드 품질을 분석하는 단계입니다.
-        stage('Quality Gate') {
+        stage('SonarQube Analysis') {
             steps {
                 container('sonar-scanner') {
                     withSonarQubeEnv('sonarqube') {
-                        timeout(time: 5, unit: 'MINUTES') {
-                            script {
-                                try {
-                                    // SonarQube 토큰을 사용하여 Quality Gate 결과 확인
-                                    def qg = waitForQualityGate(abortPipeline: false)
-                                    if (qg.status != 'OK') {
-                                        echo "Quality Gate 체크 결과: ${qg.status}"
-                                    } else {
-                                        echo "Quality Gate 통과!"
-                                    }
-                                } catch (Exception e) {
-                                    echo "Quality Gate 확인 중 오류 발생: ${e.message}"
-                                    echo "SonarQube 웹에서 품질 게이트 결과를 확인하세요. 파이프라인은 계속 진행합니다."
-                                }
-                            }
-                        }
+                        // SonarQube 분석 실행 (Dockerfile 분석 포함)
+                        sh """
+                            sonar-scanner \\
+                            -Dsonar.projectKey=${HARBOR_PROJECT}-${IMAGE_NAME} \\
+                            -Dsonar.projectName=${HARBOR_PROJECT}-${IMAGE_NAME} \\
+                            -Dsonar.sources=. \\
+                            -Dsonar.exclusions=**/node_modules/** \\
+                            -Dsonar.docker.file.path=Dockerfile \\
+                            -Dsonar.docker.activate=true \\
+                            -Dsonar.login=${SONAR_TOKEN}
+                        """
                     }
                 }
             }
@@ -65,6 +60,7 @@ pipeline {
                         timeout(time: 5, unit: 'MINUTES') {
                             script {
                                 try {
+                                    // SonarQube 토큰을 사용하여 Quality Gate 결과 확인
                                     def qg = waitForQualityGate(abortPipeline: false)
                                     if (qg.status != 'OK') {
                                         echo "Quality Gate 체크 결과: ${qg.status}"
