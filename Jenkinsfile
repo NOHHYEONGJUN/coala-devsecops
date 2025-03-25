@@ -59,23 +59,15 @@ pipeline {
                     withSonarQubeEnv('sonarqube') {
                         timeout(time: 5, unit: 'MINUTES') {
                             script {
-                                try {
-                                    def qg = waitForQualityGate(abortPipeline: true)
-                                    if (qg.status != 'OK') {
-                                        echo "Quality Gate 체크 결과: ${qg.status}"
-                                    } else {
-                                        echo "Quality Gate 통과!"
-                                    }
-                                } catch (Exception e) {
-                                    echo "Quality Gate 확인 중 오류 발생: ${e.message}"
-                                    echo "SonarQube 웹에서 품질 게이트 결과를 확인하세요. 파이프라인은 계속 진행합니다."
-                                }
+                                def qg = waitForQualityGate(abortPipeline: true)
+                                echo "✅ Quality Gate 통과 상태: ${qg.status}"
                             }
                         }
                     }
                 }
             }
         }
+
 
         // Docker 설정 파일 생성
         stage('Create Docker Config') {
