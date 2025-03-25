@@ -1,0 +1,40 @@
+# 취약한 Dockerfile - 보안 모범 사례를 따르지 않음
+
+# 오래된 Node.js 베이스 이미지 사용 (보안 취약점 포함)
+FROM node:14
+
+# root 사용자로 실행 (보안 위험)
+USER root
+
+# 불필요한 패키지 설치 (공격 표면 증가)
+RUN apt-get update && apt-get install -y \
+    vim \
+    curl \
+    wget \
+    telnet \
+    netcat \
+    iputils-ping \
+    nmap \
+    sudo
+
+# 앱 디렉토리 설정
+WORKDIR /app
+
+# 모든 파일을 복사 (.git, node_modules 등 민감한 정보 포함)
+COPY . .
+
+# 의존성 설치 - 특정 버전 고정 없이 최신 버전 사용 (일관성 없음)
+# 개발 종속성 포함 (불필요한 패키지 설치)
+RUN npm install
+
+# 환경 변수에 민감한 정보 노출
+ENV DATABASE_URL="mysql://admin:password123@db.example.com:3306/userdb"
+ENV JWT_SECRET="super_secret_jwt_key_do_not_share"
+ENV API_KEY="sk_test_abcdefghijklmnopqrstuvwxyz123456"
+
+# 불필요하게 많은 포트 노출
+EXPOSE 3000 8080 5000 9229
+
+# 보안에 취약한 설정으로 애플리케이션 실행
+# (디버깅 모드 활성화, 검증되지 않은 코드 실행 허용)
+CMD ["npm", "start"]
