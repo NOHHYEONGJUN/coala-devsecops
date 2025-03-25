@@ -60,7 +60,7 @@ pipeline {
                         timeout(time: 5, unit: 'MINUTES') {
                             script {
                                 try {
-                                    def qg = waitForQualityGate(abortPipeline: false)
+                                    def qg = waitForQualityGate(abortPipeline: true)
                                     if (qg.status != 'OK') {
                                         echo "Quality Gate 체크 결과: ${qg.status}"
                                     } else {
