@@ -60,7 +60,6 @@ pipeline {
                         timeout(time: 5, unit: 'MINUTES') {
                             script {
                                 try {
-                                    // SonarQube 토큰을 사용하여 Quality Gate 결과 확인
                                     def qg = waitForQualityGate(abortPipeline: false)
                                     if (qg.status != 'OK') {
                                         echo "Quality Gate 체크 결과: ${qg.status}"
