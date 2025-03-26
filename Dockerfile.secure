@@ -1,5 +1,3 @@
-# 보안이 강화된 Dockerfile - 멀티 스테이지 빌드와 보안 모범 사례 적용
-
 # 빌드 단계: 최신 LTS 버전의 Node.js 사용
 FROM node:20-alpine AS build
 
@@ -22,32 +20,44 @@ RUN npm run build
 # 실행 단계: 경량 Nginx 이미지 사용
 FROM nginx:1.25.4-alpine
 
-# 보안 강화를 위해 비root 사용자 생성
+# 비root 사용자 생성
 RUN addgroup -S appgroup && adduser -S appuser -G appgroup
 
-# Nginx 설정 파일 복사 (최소 권한 설정)
+# Nginx 설정 파일 복사
 COPY --chown=appuser:appgroup nginx.conf /etc/nginx/conf.d/default.conf
 
-# 빌드 단계에서 생성된 정적 파일만 복사
+# 빌드 단계에서 생성된 정적 파일 복사
 COPY --from=build --chown=appuser:appgroup /app/build /usr/share/nginx/html
 
-# 필요한 폴더에 대한 권한 설정
-RUN chown -R appuser:appgroup /var/cache/nginx && \
+# 사용자 지정 nginx.conf 파일을 생성하여 PID 경로 수정
+RUN echo 'pid /tmp/nginx.pid;' > /etc/nginx/nginx.conf && \
+    echo 'worker_processes auto;' >> /etc/nginx/nginx.conf && \
+    echo 'events { worker_connections 1024; }' >> /etc/nginx/nginx.conf && \
+    echo 'http { include /etc/nginx/conf.d/*.conf; }' >> /etc/nginx/nginx.conf && \
+    # 필요한 디렉토리 생성 및 권한 설정
+    mkdir -p /tmp/nginx/client_body && \
+    mkdir -p /tmp/nginx/proxy && \
+    mkdir -p /tmp/nginx/fastcgi && \
+    mkdir -p /tmp/nginx/uwsgi && \
+    mkdir -p /tmp/nginx/scgi && \
+    # 권한 설정
+    chown -R appuser:appgroup /tmp/nginx && \
+    chown -R appuser:appgroup /var/cache/nginx && \
     chown -R appuser:appgroup /var/log/nginx && \
-    chown -R appuser:appgroup /etc/nginx/conf.d && \
-    touch /var/run/nginx.pid && \
-    chown -R appuser:appgroup /var/run/nginx.pid && \
-    # Nginx conf 폴더 권한 설정
+    chown -R appuser:appgroup /etc/nginx && \
     chmod -R 755 /usr/share/nginx/html
 
-# 보안을 위해 비root 사용자로 전환
+# 비root 사용자로 전환
 USER appuser
 
-# 환경 변수는 런타임에 주입 (Dockerfile에 하드코딩하지 않음)
-# Docker 실행 시 --env-file 또는 -e 옵션을 사용하여 전달
+# 임시 디렉토리 경로 설정
+ENV NGINX_ENTRYPOINT_QUIET_LOGS=1
+ENV TEMP=/tmp
+ENV TMP=/tmp
+ENV TMPDIR=/tmp
 
 # 필요한 포트만 노출
 EXPOSE 8080
 
-# Nginx 실행
+# Nginx 실행 (임시 디렉토리 사용)
 CMD ["nginx", "-g", "daemon off;"]

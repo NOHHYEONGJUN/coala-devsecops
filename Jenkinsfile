@@ -52,7 +52,7 @@ pipeline {
             }
         }
 
-        // SonarQube Quality Gate 확인 단계입니다.
+        // SonarQube Quality Gate 확인
         stage('Quality Gate') {
             steps {
                 container('sonar-scanner') {
@@ -69,7 +69,7 @@ pipeline {
                                     }
                                 } catch (Exception e) {
                                     echo "❌ Quality Gate 검사 중 오류 발생: ${e.message}"
-                                    throw e  
+                                    throw e 
                                 }
                             }
                         }
@@ -78,7 +78,7 @@ pipeline {
             }
         }
 
-        // Docker 설정 파일 생성 단계입니다.
+        // Docker 설정 파일을 생성합니다.
         stage('Create Docker Config') {
             steps {
                 script {
@@ -105,12 +105,33 @@ pipeline {
             }
         }
 
-        // 배포 또는 추가 단계입니다.
+        // 배포 단계입니다.
         stage('Deploy') {
             steps {
                 echo "이미지가 성공적으로 빌드되어 배포 준비가 되었습니다: ${DOCKER_IMAGE}:${TAG}"
-                // 여기에 SSH를 통한 배포 스크립트를 추가할 수 있습니다
-                // 예: SSH로 대상 서버에 접속하여 컨테이너 실행
+
+                container('ssh') {
+                    sh """
+                        apk update && apk add openssh bash openssh-client
+                    """
+
+                    sshagent (credentials: ['jcloud-ssh']) {
+                        sh """
+                            ssh -o StrictHostKeyChecking=no -p 19130 ubuntu@113.198.66.77 <<EOF
+                                echo "✅ 기존 컨테이너 중지 및 삭제..."
+                                docker stop react-web || true
+                                docker rm react-web || true
+
+                                echo "📥 Harbor 로그인 및 최신 이미지 Pull..."
+                                docker login ${REGISTRY} -u ${HARBOR_CREDENTIALS_USR} -p ${HARBOR_CREDENTIALS_PSW}
+                                docker pull ${DOCKER_IMAGE}:${TAG}
+
+                                echo "🚀 새 컨테이너 실행..."
+                                docker run -d --name react-web -p 8080:8080 ${DOCKER_IMAGE}:${TAG}
+EOF
+                        """
+                    }
+                }
             }
         }
     }
