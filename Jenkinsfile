@@ -14,8 +14,8 @@ pipeline {
     environment {
         // Harbor 레지스트리 관련 설정입니다.
         REGISTRY = 'harbor.jbnu.ac.kr'
-        HARBOR_PROJECT = 'nhj7804'
-        IMAGE_NAME = 'test-react'
+        HARBOR_PROJECT = '<사용자 이름>'
+        IMAGE_NAME = '<이미지 이름>'
         TAG = "v${BUILD_NUMBER}"
         DOCKER_IMAGE = "${REGISTRY}/${HARBOR_PROJECT}/${IMAGE_NAME}"
         DOCKER_CREDENTIALS_ID = 'harbor-credentials'
@@ -52,7 +52,7 @@ pipeline {
             }
         }
 
-        // SonarQube Quality Gate 확인
+        // SonarQube Quality Gate 확인 단계입니다.
         stage('Quality Gate') {
             steps {
                 container('sonar-scanner') {
@@ -60,13 +60,8 @@ pipeline {
                         timeout(time: 5, unit: 'MINUTES') {
                             script {
                                 try {
-                                    // abortPipeline: true 유지 - 이는 Quality Gate 실패 시 파이프라인을 중단시킴
                                     def qg = waitForQualityGate(abortPipeline: false)
-                                    
-                                    // 상태 로깅
                                     echo "Quality Gate 상태: ${qg.status}"
-                                    
-                                    // 수동으로 파이프라인 중단 처리
                                     if (qg.status != 'OK') {
                                         error "Quality Gate 실패: ${qg.status}"
                                     } else {
@@ -74,7 +69,7 @@ pipeline {
                                     }
                                 } catch (Exception e) {
                                     echo "❌ Quality Gate 검사 중 오류 발생: ${e.message}"
-                                    throw e  // 예외를 다시 던져 파이프라인을 중단시킴
+                                    throw e  
                                 }
                             }
                         }
@@ -83,11 +78,11 @@ pipeline {
             }
         }
 
-        // Docker 설정 파일 생성
+        // Docker 설정 파일 생성 단계입니다.
         stage('Create Docker Config') {
             steps {
                 script {
-                    // Kaniko가 사용할 Docker 설정 파일 생성
+                    // Kaniko가 사용할 Docker 설정 파일을 생성합니다.
                     sh """
                         mkdir -p /kaniko/.docker
                         echo '{"auths":{"${REGISTRY}":{"username":"${HARBOR_CREDENTIALS_USR}","password":"${HARBOR_CREDENTIALS_PSW}"}}}' > /kaniko/.docker/config.json
@@ -110,7 +105,7 @@ pipeline {
             }
         }
 
-        // 배포 또는 추가 단계
+        // 배포 또는 추가 단계입니다.
         stage('Deploy') {
             steps {
                 echo "이미지가 성공적으로 빌드되어 배포 준비가 되었습니다: ${DOCKER_IMAGE}:${TAG}"
