@@ -117,7 +117,7 @@ pipeline {
 
                     sshagent (credentials: ['jcloud-ssh']) {
                         sh """
-                            ssh -o StrictHostKeyChecking=no -p 19130 ubuntu@113.198.66.77 <<EOF
+                            ssh -o StrictHostKeyChecking=no -p <Port 번호> ubuntu@113.198.66.75 <<EOF
                                 echo "✅ 기존 컨테이너 중지 및 삭제..."
                                 docker stop react-web || true
                                 docker rm react-web || true
