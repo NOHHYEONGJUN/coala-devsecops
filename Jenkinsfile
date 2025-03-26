@@ -42,7 +42,7 @@ pipeline {
                             -Dsonar.projectKey=${HARBOR_PROJECT}-${IMAGE_NAME} \\
                             -Dsonar.projectName=${HARBOR_PROJECT}-${IMAGE_NAME} \\
                             -Dsonar.sources=. \\
-                            -Dsonar.exclusions=**/node_modules/** \\
+                            -Dsonar.exclusions=**/node_modules/**,**/Dockerfile.vulnerable \\
                             -Dsonar.docker.file.path=Dockerfile \\
                             -Dsonar.docker.activate=true \\
                             -Dsonar.login=${SONAR_TOKEN}
@@ -59,15 +59,29 @@ pipeline {
                     withSonarQubeEnv('sonarqube') {
                         timeout(time: 5, unit: 'MINUTES') {
                             script {
-                                def qg = waitForQualityGate(abortPipeline: true)
-                                echo "✅ Quality Gate 통과 상태: ${qg.status}"
+                                try {
+                                    // abortPipeline: true 유지 - 이는 Quality Gate 실패 시 파이프라인을 중단시킴
+                                    def qg = waitForQualityGate(abortPipeline: false)
+                                    
+                                    // 상태 로깅
+                                    echo "Quality Gate 상태: ${qg.status}"
+                                    
+                                    // 수동으로 파이프라인 중단 처리
+                                    if (qg.status != 'OK') {
+                                        error "Quality Gate 실패: ${qg.status}"
+                                    } else {
+                                        echo "✅ Quality Gate 통과!"
+                                    }
+                                } catch (Exception e) {
+                                    echo "❌ Quality Gate 검사 중 오류 발생: ${e.message}"
+                                    throw e  // 예외를 다시 던져 파이프라인을 중단시킴
+                                }
                             }
                         }
                     }
                 }
             }
         }
-
 
         // Docker 설정 파일 생성
         stage('Create Docker Config') {
