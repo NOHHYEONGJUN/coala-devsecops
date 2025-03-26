@@ -16,7 +16,7 @@ pipeline {
         REGISTRY = 'harbor.jbnu.ac.kr'
         HARBOR_PROJECT = 'nhj7804'
         IMAGE_NAME = 'test-react'
-        TAG = "${BUILD_NUMBER}"
+        TAG = "v${BUILD_NUMBER}"
         DOCKER_IMAGE = "${REGISTRY}/${HARBOR_PROJECT}/${IMAGE_NAME}"
         DOCKER_CREDENTIALS_ID = 'harbor-credentials'
         SONAR_TOKEN = credentials("sonarqube-credentials")
