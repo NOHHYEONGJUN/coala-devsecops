@@ -1,6 +1,6 @@
 # CI/CD 보안 실습용 리액트 프로젝트
 
-Jenkins, GitLab, SonarQube, Harbor, OpenStack, Grafana를 사용한 
+Jenkins, GitLab, SonarQube, Harbor, OpenStack, Grafana를 사용한 <br/>
 CI/CD 파이프라인에서 보안 취약점 감지 및 품질 관리를 실습하기 위한 예제 애플리케이션입니다.
 
 ## 프로젝트 구성
